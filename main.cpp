@@ -7,7 +7,7 @@
 #include <glm\ext.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 
 #include "loadshaders.h"
-#include "car.h"
+#include "vehicle.h"
 
 using namespace std;
 
