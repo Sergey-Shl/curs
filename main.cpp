@@ -21,30 +21,15 @@ GLuint shaderprogram;
 GLuint MatrixID;
 glm::mat4 MVP;
 
-column c;
+const int max_veh = 10;
+
+column c(max_veh);
 
 void init(void)
 {
 
 	glGenVertexArrays(1, &VA);
 	glBindVertexArray(VA);
-
-	GLfloat vertex[] = {
-		-0.10, 0.20, 0.0, // Triangle 1
-		0.10, 0.20, 0.0,
-		-0.10, -0.20, 0.0,
-		-0.10, -0.20, 0.0, // Triangle 2
-		0.10, 0.2, 0.0,
-		0.10, -0.20, 0.0,
-		0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0
-		/*0.85, 0.85, 0.0, // Triangle 3
-		0.10, 0.0, 0.0,
-		0.85, -0.85, 0.0,
-		0.85, -0.85, 0.0, // Triangle 4
-		0.0, -0.10, 0.0,
-		-0.85, -0.85, 0.0*/
-	};
 
 	GLfloat colors[] = {
 		0.0f, 0.0f, 0.0f,
@@ -55,16 +40,9 @@ void init(void)
 		0.0f, 0.0f, 0.0f,
 		1.00f, 0.0f, 0.0f,
 		1.00f, 0.0f, 0.0f
-
-	
 	};
 
 	glGenBuffers(1, &VertextBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, VertextBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW);
-	//glBufferSubData(GL_ARRAY_BUFFER, NULL, sizeof(vert), vert);
-	//glBufferSubData(GL_ARRAY_BUFFER, sizeof(vert), sizeof(col), col);
-
 	glGenBuffers(1, &ColorBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
@@ -78,20 +56,15 @@ void init(void)
 
 	shaderprogram = LoadShaders(shaders);
 
-
-
 	MatrixID = glGetUniformLocation(shaderprogram, "MVP");
 
 	glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
-
 	glm::mat4 Scal = glm::scale(glm::vec3(1.0, 1.0, 1.0));
-
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, 3), // Camera is at (4,3,3), in World Space
+		glm::vec3(0, 0, 7), // Camera is at (4,3,3), in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 		);
-
 	glm::mat4 Model = glm::mat4(1.0f);
 
 	MVP = Scal * Projection * View * Model;
@@ -112,13 +85,16 @@ void display(void)
 	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	glDrawArrays(GL_LINE_STRIP, 6, 2);
+	for (int i = 0; i < c.getTop(); i++)
+	{
+		glDrawArrays(GL_TRIANGLES, i * 8, 6);
+		glDrawArrays(GL_LINE_STRIP, ((i + 1) * 8) - 2, 2);
+	}
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
 
-	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_10, 'A');
+	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_10, 'A');
 
 	glutSwapBuffers();
 }
@@ -155,7 +131,7 @@ float interpolation;
 
 void game()
 {
-		
+
 }
 
 void update_game(int = 1)
@@ -179,29 +155,54 @@ void move()
 
 void timer(int = 0)
 {
-	//loops = 0;
-
-	//interpolation = float(glutGet(GLUT_ELAPSED_TIME) + SKIP_TICKS - next_game_tick) / float(SKIP_TICKS);
-	//game();
+	int const numVertex = 8 * 3;
+	GLfloat vertex[max_veh * numVertex];
 
 	move();
 
-	const float w2 = c.Peek(0).width / 2;
-	const float h2 = c.Peek(0).height / 2;
-	const float x = c.Peek(0).x;
-	const float y = c.Peek(0).y;
+	for (int i = 0; i < c.getTop(); i++)
+	{
+		vehicle car = c.Peek(i);
+		float w2 = car.width / 2;
+		float h2 = car.height / 2;
+		float x = car.x;
+		float y = car.y;
+		int j = 0;
 
-	GLfloat vertex[] = {
-		(x - w2) / 10 , (y+h2)/10, 0.0, // Triangle 1
-		(x + w2) / 10, (y + h2) / 10, 0.0,
-		(x - w2) / 10, (y - h2) / 10, 0.0,
-		(x - w2) / 10, (y - h2) / 10, 0.0, // Triangle 2
-		(x + w2) / 10, (y + h2) / 10, 0.0,
-		(x + w2) / 10, (y - h2) / 10, 0.0,
-		x / 10, y / 10, 0.0,
-		(x / 10) + (c.Peek(0).speed.x) * 10, (y / 10) + (c.Peek(0).speed.y) * 10, 0.0
-	};
+		// Triangle 1
+		vertex[(i * numVertex) + j++] = (x - w2) / 10;
+		vertex[(i * numVertex) + j++] = (y + h2) / 10;
+		vertex[(i * numVertex) + j++] = 0.0;
+		vertex[(i * numVertex) + j++] = (x - w2) / 10;
+		vertex[(i * numVertex) + j++] = (y - h2) / 10;
+		vertex[(i * numVertex) + j++] = 0.0;
+		vertex[(i * numVertex) + j++] = (x + w2) / 10;
+		vertex[(i * numVertex) + j++] = (y - h2) / 10;
+		vertex[(i * numVertex) + j++] = 0.0;
+		// Triangle 2
+		vertex[(i * numVertex) + j++] = (x + w2) / 10;
+		vertex[(i * numVertex) + j++] = (y + h2) / 10;
+		vertex[(i * numVertex) + j++] = 0.0;
+		vertex[(i * numVertex) + j++] = (x + w2) / 10;
+		vertex[(i * numVertex) + j++] = (y - h2) / 10;
+		vertex[(i * numVertex) + j++] = 0.0;
+		vertex[(i * numVertex) + j++] = (x - w2) / 10;
+		vertex[(i * numVertex) + j++] = (y + h2) / 10;
+		vertex[(i * numVertex) + j++] = 0.0;
+		//Vector
+		vertex[(i * numVertex) + j++] = (x / 10) + (car.speed.x) * 2;
+		vertex[(i * numVertex) + j++] = (y / 10) + (car.speed.y) * 2;
+		vertex[(i * numVertex) + j++] = 0.0;
+		vertex[(i * numVertex) + j++] = (x / 10);
+		vertex[(i * numVertex) + j++] = (y / 10);
+		vertex[(i * numVertex) + j++] = 0.0;
+		j = 0;
 
+		cout << "========= Car " << i << " =========" << endl;
+		cout << "x" << i << ": " << x / 10 << " y" << i << ": " << y / 10 << endl;
+		cout << "Angle: " << car.getAngle() << endl;
+	}
+	
 	glBindBuffer(GL_ARRAY_BUFFER, VertextBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_DYNAMIC_DRAW);
 
@@ -209,17 +210,23 @@ void timer(int = 0)
 
 	display();
 
+	c.checkSpeed();
+
 	glutTimerFunc(SKIP_TICKS, timer, 0);
 }
 
-vehicle car1(2.0, 3.0, glm::vec3(0.1, 0.05, 0.0), 4.0, 0.0, 2.0, 6.0, 1500.0, 0, 0);
-vehicle car2(2.0, 3.0, glm::vec3(3.0, 2.0, 0.0), 4.0, 0.0, 2.0, 6.0, 2500.0, 1, 1);
-vehicle car3(2.0, 3.0, glm::vec3(3.0, 2.0, 0.0), 4.0, 0.0, 2.0, 6.0, 2500.0, 2, 2);
+vehicle car1(0.0, 0.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 2.0, 5.0, 1500.0, 0, 0);
+vehicle car2(0.0, -7.0, glm::vec3(0.0, 0.001, 0.0), 4.0, 0.0, 3.0, 6.0, 1500.0, 1, 1);
+vehicle car3(0.0, 14.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 3.0, 6.0, 1500.0, 2, 2);
+vehicle car4(0.0, 21.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 3.0, 6.0, 1500.0, 3, 3);
+vehicle car5(0.0, 28.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 2.5, 4.0, 1500.0, 4, 4);
 
 int main(int argc, char** argv) {
 	c.push(car1);
 	c.push(car2);
-	c.push(car3);
+	//c.push(car3);
+	//c.push(car4);
+	//c.push(car5);
 
 	c.printStack();
 
