@@ -1,5 +1,6 @@
 #include <glm\glm.hpp>
 #include <glm\ext.hpp> 
+#include <math.h>
 
 using namespace std;
 
@@ -16,6 +17,7 @@ public:
 	vehicle();
 	vehicle(float, float, glm::vec3, float, float, float, float, float, int, int);
 
+	float getAngle();
 };
 
 vehicle::vehicle()
@@ -38,4 +40,11 @@ vehicle::vehicle(float xx, float yy, glm::vec3 s, float a, float d, float w, flo
 	weight = weig;
 	idVehicle = i;
 	position = p;
+}
+
+
+
+float vehicle::getAngle()
+{
+	return glm::angle(speed, glm::vec3(0.0, 1.0, 0.0));
 }
