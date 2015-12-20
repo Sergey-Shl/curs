@@ -25,6 +25,16 @@ const int max_veh = 10;
 
 column c(max_veh);
 
+
+
+glm::vec3 rotate(glm::vec3 cpoint, glm::vec3 point, float angle){
+	glm::vec3 rotated_point;
+	rotated_point.x = cpoint.x + (point.x - cpoint.x) * cos(angle) - (point.y - cpoint.y) * sin(angle);
+	rotated_point.y = cpoint.y + (point.y - cpoint.y) * cos(angle) + (point.x - cpoint.x) * sin(angle);
+	rotated_point.z = 0;
+	return rotated_point;
+}
+
 void init(void)
 {
 
@@ -61,7 +71,7 @@ void init(void)
 	glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
 	glm::mat4 Scal = glm::scale(glm::vec3(1.0, 1.0, 1.0));
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, 7), // Camera is at (4,3,3), in World Space
+		glm::vec3(0, 0, 14), // Camera is at (4,3,3), in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 		);
@@ -144,17 +154,57 @@ void update_game(int = 1)
 	}
 }
 
+float a = 0;
+float b = 0;
+
 void move()
 {
+	//vec = normolize(glm::vec3(c.Peek(i).direction.x + b, c.Peek(i).direction.y + a, 0.0));
+	//c.Peek(i).direction = normolize(glm::vec3(c.Peek(i).direction.x + b, c.Peek(i).direction.y + a, 0.0));;
 	for (int i = 0; i < c.getTop(); i++)
 	{
-		c.Peek(i).x = c.Peek(i).x + c.Peek(i).speed.x;
-		c.Peek(i).y = c.Peek(i).y + c.Peek(i).speed.y;
+
+		c.Peek(i).direction = normolize(glm::vec3(c.Peek(i).direction.x + a, c.Peek(i).direction.y + b, 0.0));;
+		c.Peek(i).x += c.Peek(i).direction.x * c.Peek(i).speed;
+		c.Peek(i).y += c.Peek(i).direction.y * c.Peek(i).speed;
+		for (int j = 0; j < 4; j++)
+		{
+			c.Peek(i).xCoord[j] += c.Peek(i).direction.x * c.Peek(i).speed;
+			c.Peek(i).yCoord[j] += c.Peek(i).direction.y * c.Peek(i).speed;
+		}
+
+		float angle = c.Peek(i).getAngle();
+
+		cout << i << " : " << angle << endl;
+
+
+		if (angle > 0.01)
+		{
+			cout << i << " : " << angle << endl;
+			for (int j = 0; j < 4; j++)
+			{
+				glm::vec3 v;
+
+				v = glm::vec3(c.Peek(i).xCoord[j], c.Peek(i).yCoord[j], 0.0);
+				//if ((c.Peek(i).x > c.Peek(i).direction.x - 10) && (c.Peek(i).y > c.Peek(i).direction.y - 10) )
+					v = rotate(glm::vec3(c.Peek(i).x, c.Peek(i).y, 0.0), v, angle);
+				//else
+				//	v = rotate(glm::vec3(c.Peek(i).x, c.Peek(i).y, 0.0), v, - angle);
+				c.Peek(i).xCoord[j] = v.x;
+				c.Peek(i).yCoord[j] = v.y;
+			}
+		}
+
 	}
 }
 
 void timer(int = 0)
 {
+		a -= 0.0001;
+		b -= 0.00009;
+	
+		
+
 	int const numVertex = 8 * 3;
 	GLfloat vertex[max_veh * numVertex];
 
@@ -168,41 +218,42 @@ void timer(int = 0)
 		float x = car.x;
 		float y = car.y;
 		int j = 0;
-
 		// Triangle 1
-		vertex[(i * numVertex) + j++] = (x - w2) / 10;
-		vertex[(i * numVertex) + j++] = (y + h2) / 10;
+		vertex[(i * numVertex) + j++] = car.xCoord[0] / 10;
+		vertex[(i * numVertex) + j++] = car.yCoord[0] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = (x - w2) / 10;
-		vertex[(i * numVertex) + j++] = (y - h2) / 10;
+		vertex[(i * numVertex) + j++] = car.xCoord[3] / 10;
+		vertex[(i * numVertex) + j++] = car.yCoord[3] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = (x + w2) / 10;
-		vertex[(i * numVertex) + j++] = (y - h2) / 10;
+		vertex[(i * numVertex) + j++] = car.xCoord[2] / 10;
+		vertex[(i * numVertex) + j++] = car.yCoord[2] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
 		// Triangle 2
-		vertex[(i * numVertex) + j++] = (x + w2) / 10;
-		vertex[(i * numVertex) + j++] = (y + h2) / 10;
+		vertex[(i * numVertex) + j++] = car.xCoord[1] / 10;
+		vertex[(i * numVertex) + j++] = car.yCoord[1] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = (x + w2) / 10;
-		vertex[(i * numVertex) + j++] = (y - h2) / 10;
+		vertex[(i * numVertex) + j++] = car.xCoord[2] / 10;
+		vertex[(i * numVertex) + j++] = car.yCoord[2] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = (x - w2) / 10;
-		vertex[(i * numVertex) + j++] = (y + h2) / 10;
+		vertex[(i * numVertex) + j++] = car.xCoord[0] / 10;
+		vertex[(i * numVertex) + j++] = car.yCoord[0] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
 		//Vector
-		vertex[(i * numVertex) + j++] = (x / 10) + (car.speed.x) * 2;
-		vertex[(i * numVertex) + j++] = (y / 10) + (car.speed.y) * 2;
+		vertex[(i * numVertex) + j++] = (x / 10) + (car.direction.x) * 10;
+		vertex[(i * numVertex) + j++] = (y / 10) + (car.direction.y) * 10;
 		vertex[(i * numVertex) + j++] = 0.0;
 		vertex[(i * numVertex) + j++] = (x / 10);
 		vertex[(i * numVertex) + j++] = (y / 10);
 		vertex[(i * numVertex) + j++] = 0.0;
 		j = 0;
 
-		cout << "========= Car " << i << " =========" << endl;
-		cout << "x" << i << ": " << x / 10 << " y" << i << ": " << y / 10 << endl;
-		cout << "Angle: " << car.getAngle() << endl;
+		//float s = c.Peek(i).direction.length();
+
+		//cout << "========= Car " << i << " =========" << endl;
+		//cout << "x" << i << ": " << x << " y" << i << ": " << y << endl;
+		//cout << "Angle: " << car.getAngle() * 180 / 3.14 << endl;
 	}
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, VertextBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_DYNAMIC_DRAW);
 
@@ -210,29 +261,72 @@ void timer(int = 0)
 
 	display();
 
-	c.checkSpeed();
+	/*	if (c.Peek(0).y > 35)
+	c.Peek(0).direction *= c.Peek(0).deceleration;
+	else
+	c.Peek(0).direction *= c.Peek(0).acceleration;
+	if (c.Peek(3).y > 35)
+	c.Peek(3).direction *= c.Peek(3).deceleration;
+	else
+	c.Peek(3).direction *= c.Peek(3).acceleration;
+	*/
+	//c.checkSpeed();
 
 	glutTimerFunc(SKIP_TICKS, timer, 0);
 }
 
-vehicle car1(0.0, 0.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 2.0, 5.0, 1500.0, 0, 0);
-vehicle car2(0.0, -7.0, glm::vec3(0.0, 0.001, 0.0), 4.0, 0.0, 3.0, 6.0, 1500.0, 1, 1);
-vehicle car3(0.0, 14.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 3.0, 6.0, 1500.0, 2, 2);
-vehicle car4(0.0, 21.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 3.0, 6.0, 1500.0, 3, 3);
-vehicle car5(0.0, 28.0, glm::vec3(0.0, 0.05, 0.0), 4.0, 0.0, 2.5, 4.0, 1500.0, 4, 4);
+vehicle car1(5.0, 0.0, 0.1, glm::vec3(0.0, 1.0, 0.0), 1.0, 0.99, 4.0, 9.0, 1500.0, 0, 0);
+vehicle car2(15.0, 0.0, 0.2, glm::vec3(0.0, 1.0, 0.0), 1.0, 0.7, 3.0, 6.0, 1500.0, 1, 1);
+vehicle car3(10.0, 0.0, 0.21, glm::vec3(0.0, 1.0, 0.0), 1.0, 0.7, 3.0, 6.0, 1500.0, 2, 2);
+vehicle car4(-10.0, 0.0, 0.25, glm::vec3(0.0, 1.0, 0.0), 1.0, 0.99, 2.0, 5.0, 1500.0, 0, 0);
+vehicle car5(-5.0, 0.0, 0.2, glm::vec3(0.0, 1.0, 0.0), 4.0, 0.0, 2.5, 4.0, 1500.0, 4, 4);
+
+vehicle cars[max_veh];
 
 int main(int argc, char** argv) {
-	c.push(car1);
-	c.push(car2);
+	//c.push(car1);
+	//c.push(car2);
 	//c.push(car3);
 	//c.push(car4);
 	//c.push(car5);
 
-	c.printStack();
+	for (int i = 0; i < max_veh; i++)
+	{
+		cars[i].x = (i - max_veh / 2) * 10;
+		cars[i].y = (i - max_veh / 2) * 5;
+		cars[i].speed = +0.2;
+		if (i % 2 == 0)
+			cars[i].direction = { 0.0, 1.0, 0.0 };
+		else
+			cars[i].direction = { 0.0, -1.0, 0.0 };
+		cars[i].width = 3;
+		cars[i].height = 6;
+		cars[i].idVehicle = i;
+		cars[i].position = i;
+
+		float w2 = cars[i].width / 2;
+		float h2 = cars[i].height / 2;
+
+		cars[i].xCoord[0] = cars[i].x - w2;
+		cars[i].yCoord[0] = cars[i].y + h2;
+
+		cars[i].xCoord[1] = cars[i].x + w2;
+		cars[i].yCoord[1] = cars[i].y + h2;
+
+		cars[i].xCoord[2] = cars[i].x + w2;
+		cars[i].yCoord[2] = cars[i].y - h2;
+
+		cars[i].xCoord[3] = cars[i].x - w2;
+		cars[i].yCoord[3] = cars[i].y - h2;
+
+		c.push(cars[i]);
+	}
+
+	//c.printStack();
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowSize(512, 512);
+	glutInitWindowSize(1024, 1024);
 	glutInitContextVersion(4, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	glutCreateWindow(argv[0]);
