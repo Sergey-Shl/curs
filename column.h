@@ -54,7 +54,7 @@ column::~column()
 inline void column::push(const vehicle &value)
 {
 	// проверяем размер стека
-	if(top < size) // номер текущего элемента должен быть меньше размера стека
+	if (top < size) // номер текущего элемента должен быть меньше размера стека
 		stackPtr[top++] = value; // помещаем элемент в стек
 }
 
@@ -62,14 +62,14 @@ inline void column::push(const vehicle &value)
 inline vehicle column::pop()
 {
 	// проверяем размер стека
-	if(top > 0) // номер текущего элемента должен быть больше 0
+	if (top > 0) // номер текущего элемента должен быть больше 0
 		stackPtr[--top]; // удаляем элемент из стека
 }
 
 // функция возвращает n-й элемент от вершины стека
-inline vehicle& column::Peek(int nom) 
+inline vehicle& column::Peek(int nom)
 {
-	if(nom <= top)
+	if (nom <= top)
 		return stackPtr[nom]; // вернуть n-й элемент стека
 }
 
@@ -112,28 +112,27 @@ inline float column::checkDis(int c2, int c1 = 0)
 
 inline void column::checkSpeed()
 {
-	float dv = 0.0002; // v = 0.05
-	vehicle car1 = Peek(0);
-	for (int i = 1; i < top; i++)
+	float dv = 1.4; // v = 0.05
+	for (int i = 1; i < 3; i++)
 	{
 		vehicle car1 = Peek(i - 1);
 		vehicle &car2 = Peek(i);
-		if (checkDis(i, i - 1) > (car1.height / 2 + car2.height / 2))
+		if (checkDis(i, i - 1) >(car1.height / 2 + car2.height / 2 + 4))
 		{
-			car2.speed.y += dv;
+			//car2.destination *= car2.acceleration;
 			/*
-			if (car1.speed.x - dv > car2.speed.x)
-				car2.speed.x += dv;
-			if (car1.speed.x + dv < car2.speed.x)
-				car2.speed.x -= dv;
-			if (car1.speed.y - dv > car2.speed.y)
-				car2.speed.y += dv;
-			if (car1.speed.y + dv < car2.speed.y)
-				car2.speed.y -= dv;
+			if (car1.destination.x - dv > car2.destination.x)
+			car2.destination.x += dv;
+			if (car1.destination.x + dv < car2.destination.x)
+			car2.destination.x -= dv;
+			if (car1.destination.y - dv > car2.destination.y)
+			car2.destination.y += dv;
+			if (car1.destination.y + dv < car2.destination.y)
+			car2.destination.y -= dv;
 			*/
 		}
-		else
-			car2.speed.y = 0;
+		//if (checkDis(i, i - 1) < (car1.height / 2 + car2.height / 2 + 7))
+			//car2.destination *= car2.deceleration;
 	}
 
 }
