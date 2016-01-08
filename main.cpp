@@ -17,7 +17,7 @@ GLuint shaderprogram;
 GLuint MatrixID;
 glm::mat4 MVP;
 
-const int max_veh = 10;
+const int max_veh = 8;
 
 column c(max_veh);
 
@@ -65,7 +65,7 @@ void init(void)
 	glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
 	glm::mat4 Scal = glm::scale(glm::vec3(1.0, 1.0, 1.0));
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, 14), // Camera is at (4,3,3), in World Space
+		glm::vec3(0, 0, 20), // Camera is at (4,3,3), in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 		);
@@ -93,6 +93,10 @@ void display(void)
 	{
 		glDrawArrays(GL_TRIANGLES, i * 8, 6);
 		glDrawArrays(GL_LINE_STRIP, ((i + 1) * 8) - 2, 2);
+		if (i == c.getTop() - 1)
+		{
+			glDrawArrays(GL_LINE_STRIP, ((i + 1) * 8), 6);
+		}
 	}
 
 	
@@ -153,15 +157,20 @@ void update_game(int = 1)
 float a = 0;
 float b = 0;
 float dx, dy, tx, ty;
+
 void move()
 {
 	for (int i = 0; i < c.getTop(); i++)
 	{
-		if (c.Peek(i).y > 40)
+		if (c.Peek(i).y > 40 && c.Peek(i).x > -10)
+		{
 			c.Peek(i).direction.x += 0.01;
+		}
 
 		if (c.Peek(i).x > 40)
+		{
 			c.Peek(i).direction.y -= 0.01;
+		}
 
 		if (c.Peek(i).x > 40 && c.Peek(i).y < -20)
 		{
@@ -169,10 +178,17 @@ void move()
 			c.Peek(i).direction.x -= 0.01;
 		}
 
+		if (c.Peek(i).x < -40 && c.Peek(i).y < -20)
+		{
+			c.Peek(i).direction.y += 0.01;
+			c.Peek(i).direction.x += 0.0025;
+		}
+
 		c.Peek(i).direction = normolize({ c.Peek(i).direction.x, c.Peek(i).direction.y, 0.0 });
 
 		c.Peek(i).x += c.Peek(i).direction.x * c.Peek(i).speed;
 		c.Peek(i).y += c.Peek(i).direction.y * c.Peek(i).speed;
+
 		for (int j = 0; j < 4; j++)
 		{
 			c.Peek(i).xCoord[j] += c.Peek(i).direction.x * c.Peek(i).speed;
@@ -230,8 +246,8 @@ void timer(int = 0)
 		vertex[(i * numVertex) + j++] = car.yCoord[0] / 10;
 		vertex[(i * numVertex) + j++] = 0.0;
 		//Vector
-		vertex[(i * numVertex) + j++] = (x / 10) + (car.direction.x) * 10;
-		vertex[(i * numVertex) + j++] = (y / 10) + (car.direction.y) * 10;
+		vertex[(i * numVertex) + j++] = (x / 10) + (car.direction.x) * 0;
+		vertex[(i * numVertex) + j++] = (y / 10) + (car.direction.y) * 0;
 		vertex[(i * numVertex) + j++] = 0.0;
 		vertex[(i * numVertex) + j++] = (x / 10);
 		vertex[(i * numVertex) + j++] = (y / 10);
@@ -240,12 +256,12 @@ void timer(int = 0)
 		if (i == c.getTop() - 1)
 		{
 			int index = (i * numVertex) + j;
-			vertex[index++] = 5 / 10;
-			vertex[index++] = 0;
-			vertex[index++] = 2 / 10;
+			vertex[index++] = -1;
+			vertex[index++] = -8;
+			vertex[index++] = -1;
 			vertex[index++] = -5;
-			vertex[index++] = 2;
-			vertex[index++] = 4;
+			vertex[index++] = -8;
+			vertex[index++] = -5;
 			vertex[index++] = -2;
 			vertex[index++] = 6;
 			vertex[index++] = -7;
@@ -305,12 +321,12 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < max_veh; i++)
 	{
 		cars[i].x = (i - max_veh / 2) * 0 - 5;
-		cars[i].y = -50 - (i - max_veh / 2) * 10;
+		cars[i].y = -100 - (i - max_veh / 2) * 10;
 		//cars[i].y = 0;
-		cars[i].speed = +0.15;
+		cars[i].speed = +0.20;
 
 		cars[i].direction = normolize({ 0.0, 1.0, 0.0 });
-		cars[i].acceleration = 0.001;
+		cars[i].acceleration = 0.01;
 		cars[i].deceleration = 0.0009;
 		cars[i].width = 3;
 		cars[i].height = 6;
