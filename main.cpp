@@ -8,15 +8,14 @@
 
 using namespace std;
 
-class cell
+class intersection
 {
 public:
-	int type; // 0 - free space, 1 - road, 2 - intersection
-	int dir[4];
+	float x, y;
+	float size; //height and width
+	float dir[2]; // x, y
 };
 
-
-GLuint program;
 GLuint VertextBuffer;
 GLuint ColorBuffer;
 GLuint VA;
@@ -25,44 +24,11 @@ GLuint shaderprogram;
 GLuint MatrixID;
 glm::mat4 MVP;
 
+const int num_intersetions = 4;
+intersection intersections[num_intersetions] = { { 0.0f, -70.0f, 20.0f, { 0.0f, 1.0f } }, { 0.0f, 0.0f, 20.0f, { 1.0f, 0.0f } }, { 100.0f, 0.0f, 20.0f, { 0.0f, -1.0f } }, { 100.0f, -70.0f, 20.0f, { 1.0f, 0.0f } } };
+
 const int max_veh = 10;
-const int map_size = 20;
-
-cell r = { 1, 0 };
-cell fs = { 0, 0 };
-cell intersec[5]; //intersections
-
-cell map[map_size * map_size] = { fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, { 2, { 0, 0, 0, 0 } }, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, { 2, { 0, 1, 0, 0 } }, r, r, r, r, r, r, r, r, r, { 2, { 0, 0, 1, 0 } }, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, r, fs, fs, fs, fs, fs, r, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, { 2, { 1, 0, 0, 0 } }, r, r, r, r, r, { 2, { 0, 0, 0, 1 } }, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, r, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs,
-fs, fs, fs, fs, fs, fs, fs, fs, { 2, { 1, 0, 0, 0 } }, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs, fs };
-
 column c(max_veh);
-
-
-glm::vec3 rotate(glm::vec3 cpoint, glm::vec3 point, float angle){
-	glm::vec3 rotated_point;
-	rotated_point.x = cpoint.x + (point.x - cpoint.x) * cos(angle) - (point.y - cpoint.y) * sin(angle);
-	rotated_point.y = cpoint.y + (point.y - cpoint.y) * cos(angle) + (point.x - cpoint.x) * sin(angle);
-	rotated_point.z = 0;
-	return rotated_point;
-}
 
 void init(void)
 {
@@ -70,12 +36,12 @@ void init(void)
 	glBindVertexArray(VA);
 
 	GLfloat colors[] = {
-		0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
+		0.5f, 0.0f, 0.0f,
+		0.5f, 0.0f, 0.0f,
+		0.5f, 0.0f, 0.0f,
+		0.5f, 0.0f, 0.0f,
+		0.5f, 0.0f, 0.0f,
+		0.5f, 0.0f, 0.0f,
 		1.00f, 0.0f, 0.0f,
 		1.00f, 0.0f, 0.0f
 	};
@@ -129,7 +95,9 @@ void display(void)
 		glDrawArrays(GL_LINE_STRIP, ((i + 1) * 8) - 2, 2);
 		if (i == c.getTop() - 1)
 		{
-			glDrawArrays(GL_LINES, ((i + 1) * 8), 80);
+			int ii = (i + 1) * 8;
+			for (int j = 0; j < num_intersetions; j++)
+				glDrawArrays(GL_LINE_LOOP, (ii + j * 4), 4);
 		}
 	}
 
@@ -137,8 +105,6 @@ void display(void)
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
-
-	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_10, 'A');
 
 	glutSwapBuffers();
 }
@@ -167,81 +133,10 @@ const int TICKS_PER_SECOND = 60;
 const int SKIP_TICKS = 1000 / TICKS_PER_SECOND;
 const int MAX_FRAMESKIP = 5;
 
-unsigned long next_game_tick = glutGet(GLUT_ELAPSED_TIME);
-unsigned long elapsed_time = 0;
-
-int loops;
-float interpolation;
-
-void game()
-{
-
-}
-
-void update_game(int = 1)
-{
-	if (glutGet(GLUT_ELAPSED_TIME) > next_game_tick && loops < MAX_FRAMESKIP) {
-		game();
-		next_game_tick += SKIP_TICKS;
-		loops++;
-		glutTimerFunc(SKIP_TICKS, update_game, 1);
-	}
-}
-
 void move()
 {
 	for (int i = 0; i < c.getTop(); i++)
 	{
-
-
-		int x1 = (((c.Peek(i).x - 5) / 10) + 10);
-		int y1 = 20 - (((c.Peek(i).y - 5) / 10) + 10);
-		//map[y1 * map_size + x1].type = 3;
-
-		if (map[y1 * map_size + x1].type == 2)
-		{
-			if (map[y1 * map_size + x1].dir[0] == 1)
-			{
-				c.Peek(i).direction.x = 0;
-				c.Peek(i).direction.y = 1;
-			} else if (map[y1 * map_size + x1].dir[1] == 1)
-			{
-				c.Peek(i).direction.x = 1;
-				c.Peek(i).direction.y = 0;
-			} else	if (map[y1 * map_size + x1].dir[2] == 1)
-			{
-				c.Peek(i).direction.x = 0;
-				c.Peek(i).direction.y = -1;
-			} else if (map[y1 * map_size + x1].dir[3] == 1)
-			{
-				c.Peek(i).direction.x = -1;
-				c.Peek(i).direction.y = 0;
-			}
-			else 
-			{
-				c.Peek(i).speed = 0.0;
-			}
-		}
-
-		/*
-		if (c.Peek(i).x > 65)
-		{
-			c.Peek(i).direction.x = 0;
-			c.Peek(i).direction.y = -1;
-		}
-
-		if (c.Peek(i).x > 65 && c.Peek(i).y < -25)
-		{
-			c.Peek(i).direction.x = -1;
-			c.Peek(i).direction.y = 0;
-		}
-
-		if (c.Peek(i).x < -65 && c.Peek(i).y < -25)
-		{
-			c.Peek(i).direction.x = 0;
-			c.Peek(i).direction.y = 1;
-		}
-		*/
 
 		c.Peek(i).direction = normolize({ c.Peek(i).direction.x, c.Peek(i).direction.y, 0.0 });
 
@@ -261,8 +156,9 @@ void move()
 
 void timer(int = 0)
 {
-	int const numVertex = 8 * 3;
-	GLfloat vertex[max_veh * numVertex + 40 * 3 * 2];
+	// ИСПРАВАИТЬ
+	int const numVertex = 8 * 3; 
+	GLfloat vertex[max_veh * numVertex + num_intersetions * 4 * 3];
 
 	move();
 
@@ -275,24 +171,24 @@ void timer(int = 0)
 		float y = car.y;
 		int j = 0;
 		// Triangle 1
-		vertex[(i * numVertex) + j++] = car.xCoord[0] ;
+		vertex[(i * numVertex) + j++] = car.xCoord[0];
 		vertex[(i * numVertex) + j++] = car.yCoord[0];
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = car.xCoord[3] ;
-		vertex[(i * numVertex) + j++] = car.yCoord[3] ;
+		vertex[(i * numVertex) + j++] = car.xCoord[3];
+		vertex[(i * numVertex) + j++] = car.yCoord[3];
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = car.xCoord[2] ;
-		vertex[(i * numVertex) + j++] = car.yCoord[2] ;
+		vertex[(i * numVertex) + j++] = car.xCoord[2];
+		vertex[(i * numVertex) + j++] = car.yCoord[2];
 		vertex[(i * numVertex) + j++] = 0.0;
 		// Triangle 2
-		vertex[(i * numVertex) + j++] = car.xCoord[1] ;
+		vertex[(i * numVertex) + j++] = car.xCoord[1];
 		vertex[(i * numVertex) + j++] = car.yCoord[1];
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = car.xCoord[2] ;
-		vertex[(i * numVertex) + j++] = car.yCoord[2] ;
+		vertex[(i * numVertex) + j++] = car.xCoord[2];
+		vertex[(i * numVertex) + j++] = car.yCoord[2];
 		vertex[(i * numVertex) + j++] = 0.0;
-		vertex[(i * numVertex) + j++] = car.xCoord[0] ;
-		vertex[(i * numVertex) + j++] = car.yCoord[0] ;
+		vertex[(i * numVertex) + j++] = car.xCoord[0];
+		vertex[(i * numVertex) + j++] = car.yCoord[0];
 		vertex[(i * numVertex) + j++] = 0.0;
 		//Vector
 		vertex[(i * numVertex) + j++] = (x ) + (car.direction.x) * 50;
@@ -305,32 +201,20 @@ void timer(int = 0)
 		if (i == c.getTop() - 1)
 		{
 			int index = (i * numVertex) + j;
-			/*vertex[index++] = -2;
-			vertex[index++] = -50;
-			vertex[index++] = 0;
-			vertex[index++] = -2;
-			vertex[index++] = 5;
-			vertex[index++] = 0;
-			vertex[index++] = 30;
-			vertex[index++] = 5;
-			vertex[index++] = 0;
-			vertex[index++] = 30;
-			vertex[index++] = -30;
-			vertex[index++] = 0; */
-			for (int k = 0; k < 20; k++)
+			for (int k = 0; k < num_intersetions; k++)
 			{
-				vertex[index++] = -150;
-				vertex[index++] = (k - 10) * 10;
+				vertex[index++] = intersections[k].x - intersections[k].size / 2;
+				vertex[index++] = intersections[k].y - intersections[k].size / 2;;
 				vertex[index++] = 0;
-				vertex[index++] = 150;
-				vertex[index++] = (k - 10) * 10;
+				vertex[index++] = intersections[k].x + intersections[k].size / 2;
+				vertex[index++] = intersections[k].y - intersections[k].size / 2;;
 				vertex[index++] = 0;
 
-				vertex[index++] = (k - 10) * 10;
-				vertex[index++] = -150;
+				vertex[index++] = intersections[k].x + intersections[k].size / 2;
+				vertex[index++] = intersections[k].y + intersections[k].size / 2;;
 				vertex[index++] = 0;
-				vertex[index++] = (k - 10) * 10;
-				vertex[index++] = 150;
+				vertex[index++] = intersections[k].x - intersections[k].size / 2;
+				vertex[index++] = intersections[k].y + intersections[k].size / 2;;
 				vertex[index++] = 0;
 			}
 		}
@@ -341,39 +225,12 @@ void timer(int = 0)
 
 	}
 
-	/*
-	system("cls");
-	for (int i = 0; i < 20; i++)
-	{
-		for (int j = 0; j < 20; j++)
-		{
-			if (map[i * map_size + j].type == 0)
-				cout << " ";
-			if (map[i * map_size + j].type == 1)
-				cout << "1";
-			if (map[i * map_size + j].type == 2)
-				cout << "*";
-			if (map[i * map_size + j].type == 3)
-				cout << "C";
-			if (j == 19)
-				cout << "end" << endl;
-		}
-	}
-	*/
 	glBindBuffer(GL_ARRAY_BUFFER, VertextBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_DYNAMIC_DRAW);
 
 	//fpscalculate();
 
 	display();
-
-	for (int i = 1; i < c.getTop(); i++)
-	{
-		//c.Peek(i).checkDis(c.Peek(i - 1));
-	}
-
-	
-
 
 	glutTimerFunc(5, timer, 0);
 }
@@ -384,20 +241,13 @@ void MouseFunc(int button, int state, int x, int y)
 		cout << x << " " << y << endl;
 }
 
-vehicle car1(5.0, 0.0, 0.1, glm::vec3(0.0, 1.0, 0.0), 0.001, 0.0009, 4.0, 9.0, 1500.0, 0, 0);
-vehicle car2(5.0, -20, 0.2, glm::vec3(0.0, 1.0, 0.0), 0.001, 0.0009, 3.0, 6.0, 1500.0, 1, 1);
-vehicle car3(5.0, -46, 0.3, glm::vec3(0.0, 1.0, 0.0), 0.001, 0.0009, 3.0, 6.0, 1500.0, 2, 2);
-vehicle car4(-10.0, 0.0, 0.25, glm::vec3(0.0, 1.0, 0.0), 1.0, 0.99, 2.0, 5.0, 1500.0, 0, 0);
-vehicle car5(-5.0, 0.0, 0.2, glm::vec3(0.0, 1.0, 0.0), 4.0, 0.0, 2.5, 4.0, 1500.0, 4, 4);
-
-vehicle car;
 
 int main(int argc, char** argv) {
+	vehicle car;
 	for (int i = 0; i < max_veh; i++)
 	{
-		car.x = (i - max_veh / 2) * 0 - 15;
+		car.x = (i - max_veh / 2) * 0;
 		car.y = -100 - (i - max_veh / 2) * 15;
-		//car.y = 0;
 		car.speed = +0.20;
 
 		car.direction = normolize({ 0.0, 1.0, 0.0 });
@@ -442,15 +292,8 @@ int main(int argc, char** argv) {
 			car.yCoord[3] = car.y + h2;
 		}
 
-
-
 		c.push(car);
 	}
-
-	//c.Peek(0).speed = 0.2;
-	//c.printStack();
-
-
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
@@ -467,7 +310,6 @@ int main(int argc, char** argv) {
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 	glutDisplayFunc(display);
 	glutMouseFunc(MouseFunc);
-	//update_game();
 	timer();
 	glutMainLoop();
 }
