@@ -136,9 +136,12 @@ void vehicle::checkSpeed(vehicle v1)
 }
 
 void vehicle::rotate(float angle){
+	float x1, y1;
 	for (int j = 0; j < 4; j++)
 	{
-		xCoord[j] = this->x + (xCoord[j] - this->x) * cos(angle) - (yCoord[j] - this->y) * sin(angle);
-		yCoord[j] = this->y + (yCoord[j] - this->y) * cos(angle) + (xCoord[j] - this->x) * sin(angle);
+		x1 = this->x + (xCoord[j] - this->x) * cos(angle) - (yCoord[j] - this->y) * sin(angle);
+		y1 = this->y + (yCoord[j] - this->y) * cos(angle) + (xCoord[j] - this->x) * sin(angle);
+		xCoord[j] = x1;
+		yCoord[j] = y1;
 	}
 }
