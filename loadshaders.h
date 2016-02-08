@@ -46,7 +46,7 @@ GLuint LoadShaders(ShaderInfo const * shaderInfo)
 		"uniform mat4 MVP;"
 		"void main() {"
 		"fragmentColor = vertexColor;"
-		"gl_Position = MVP * vec4(position, 1);}";
+		"gl_Position = MVP * vec4(position / 10, 1);}";
 	ShaderInfo vertexShaderInfo = { GL_VERTEX_SHADER, vertexSource };
 	GLuint vertexShader = CreateShader(&vertexShaderInfo);
 	if (vertexShader == 0) {
