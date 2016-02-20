@@ -8,13 +8,20 @@
 
 using namespace std;
 
+class direction
+{
+public:
+	glm::vec2 dir;
+	bool main;
+};
+
 class intersection
 {
 public:
 	float x, y;
 	float size; //height and width
-	//float dir[2]; // x, y
-	glm::vec2 dir;
+	direction directions[4];
+	int connections[4];
 };
 
 GLuint VertextBuffer;
@@ -25,8 +32,13 @@ GLuint shaderprogram;
 GLuint MatrixID;
 glm::mat4 MVP;
 
-const int num_intersetions = 4;
-intersection intersections[num_intersetions] = { { 0.0f, -70.0f, 20.0f, { 0.0f, 1.0f } }, { 0.0f, 0.0f, 20.0f, { 1.0f, 0.0f } }, { 100.0f, 0.0f, 20.0f, { 0.0f, -1.0f } }, { 100.0f, -70.0f, 20.0f, { 1.0f, 0.0f } } };
+const int num_intersetions = 6;
+intersection intersections[num_intersetions] = { { 0.0f, -70.0f, 20.0f, { { glm::vec2(0.0, 1.0), true }, { glm::vec2(0.0, 0.0), false }, { glm::vec2(0.0, -1.0), false }, { glm::vec2(0.0, 0.0), false } }, {1, -1, -1, -1} }, //id 0
+								{ 0.0f, 40.0f, 20.0f, { { glm::vec2(0.0, 0.0), false }, { glm::vec2(1.0, 0.0), true }, { glm::vec2(0.0, -1.0), false }, { glm::vec2(0.0, 0.0), false } }, {-1, 2, 0, -1} }, //id 1
+								{ 70.0f, 40.0f, 20.0f, { { glm::vec2(0.0, 0.0), false }, { glm::vec2(0.0, 0.0), false }, { glm::vec2(0.0, -1.0), true }, { glm::vec2(-1.0, 0.0), false } }, { -1, -1, 3, 1 } }, //id 2
+								{ 70.0f, -40.0f, 20.0f, { { glm::vec2(0.0, 1.0), false }, { glm::vec2(1.0, 0.0), false }, { glm::vec2(0.0, 0.0), false }, { glm::vec2(-1.0, 0.0), true } }, { 2, 4, -1, 5 } }, //id 3
+								{ 100.0f, -40.0f, 20.0f, { { glm::vec2(0.0, 0.0), false }, { glm::vec2(1.0, 0.0), false }, { glm::vec2(0.0, 0.0), false }, { glm::vec2(-1.0,0.0), true } }, { -1, -1, -1, 3 } }, //id 4
+								{ 30.0f, -40.0f, 20.0f, { { glm::vec2(0.0, 0.0), false }, { glm::vec2(1.0, 0.0), false }, { glm::vec2(0.0, 0.0), false }, { glm::vec2(-1.0, 0.0), false } }, { -1, -1, -1, -1 } } }; //id 5
 
 const int max_veh = 10;
 column c(max_veh);
@@ -97,7 +109,7 @@ void display(void)
 		if (i == c.getTop() - 1)
 		{
 
-				glDrawArrays(GL_LINES, (i + 1) * 8, (num_intersetions - 1) * 4);
+				glDrawArrays(GL_LINES, (i + 1) * 8, 60);
 		}
 	}
 
@@ -127,12 +139,6 @@ void fpscalculate()
 }
 
 
-float numticks = 0;
-
-const int TICKS_PER_SECOND = 60;
-const int SKIP_TICKS = 1000 / TICKS_PER_SECOND;
-const int MAX_FRAMESKIP = 5;
-
 void move()
 {
 	for (int i = 0; i < c.getTop(); i++)
@@ -154,11 +160,12 @@ void move()
 	}
 }
 
-void timer(int = 0)
+void updategame()
 {
 	// ИСПРАВАИТЬ
-	int const numVertex = 8 * 3; 
-	GLfloat vertex[max_veh * numVertex + (num_intersetions - 1) * 2 * 3 * 2];
+	int const numVertex = 8 * 3;
+	//GLfloat vertex[max_veh * numVertex + (num_intersetions - 1) * 2 * 3 * 2];
+	GLfloat vertex[max_veh * numVertex + 200];
 
 	move();
 
@@ -191,133 +198,166 @@ void timer(int = 0)
 		vertex[(i * numVertex) + j++] = car.yCoord[0];
 		vertex[(i * numVertex) + j++] = 0.0;
 		//Vector
-		vertex[(i * numVertex) + j++] = (x ) + (car.direction.x) * 50;
-		vertex[(i * numVertex) + j++] = (y ) + (car.direction.y) * 50;
+		vertex[(i * numVertex) + j++] = (x)+(car.direction.x) * 50;
+		vertex[(i * numVertex) + j++] = (y)+(car.direction.y) * 50;
 		vertex[(i * numVertex) + j++] = 0.0;
 		vertex[(i * numVertex) + j++] = (x);
 		vertex[(i * numVertex) + j++] = (y);
 		vertex[(i * numVertex) + j++] = 0.0;
 
+		//ИСПАРВИТЬ: Карта расчитывается единожды
+
 		if (i == c.getTop() - 1)
 		{
 			int index = (i * numVertex) + j;
-			for (int k = 0; k < num_intersetions - 1; k++)
+			for (int k = 0; k < num_intersetions; k++)
 			{
-				if (intersections[k].dir.x > 0)
+				for (int n = 0; n < 4; n++)
 				{
-					vertex[index++] = intersections[k].x - intersections[k].size / 2;
-					vertex[index++] = intersections[k].y + intersections[k].size / 2;
-					vertex[index++] = 0;
-					index += 3;
-					vertex[index++] = intersections[k].x - intersections[k].size / 2;
-					vertex[index++] = intersections[k].y - intersections[k].size / 2;
-					vertex[index++] = 0;
-				}
-				if (intersections[k].dir.x < 0) 
-				{
-					vertex[index++] = intersections[k].x + intersections[k].size / 2;
-					vertex[index++] = intersections[k].y + intersections[k].size / 2;
-					vertex[index++] = 0;
-					index += 3;
-					vertex[index++] = intersections[k].x + intersections[k].size / 2;
-					vertex[index++] = intersections[k].y - intersections[k].size / 2;
-					vertex[index++] = 0;
-				}
+					if (intersections[k].directions[n].dir.x == 0 && intersections[k].directions[n].dir.y == 0)
+					{
+						cout << "k = " << k << " n = " << n << endl;
+						switch (n)
+						{
+						case 0:
+							vertex[index++] = intersections[k].x - intersections[k].size / 2;
+							vertex[index++] = intersections[k].y + intersections[k].size / 2;
+							vertex[index++] = 0.0;
 
-				if (intersections[k].dir.y > 0)
-				{
-					vertex[index++] = intersections[k].x - intersections[k].size / 2;
-					vertex[index++] = intersections[k].y - intersections[k].size / 2;
-					vertex[index++] = 0;
-					index += 3;
-					vertex[index++] = intersections[k].x + intersections[k].size / 2;
-					vertex[index++] = intersections[k].y - intersections[k].size / 2;
-					vertex[index++] = 0;
-				}
-				if (intersections[k].dir.y < 0) 
-				{
-					vertex[index++] = intersections[k].x - intersections[k].size / 2;
-					vertex[index++] = intersections[k].y + intersections[k].size / 2;
-					vertex[index++] = 0;
-					index += 3;
-					vertex[index++] = intersections[k].x + intersections[k].size / 2;
-					vertex[index++] = intersections[k].y + intersections[k].size / 2;
-					vertex[index++] = 0;
-				}
+							vertex[index++] = intersections[k].x + intersections[k].size / 2;
+							vertex[index++] = intersections[k].y + intersections[k].size / 2;
+							vertex[index++] = 0.0;
 
 
-				if (intersections[k + 1].dir.x > 0)
-				{
-					index -= 6;
-					vertex[index++] = intersections[k + 1].x - intersections[k + 1].size / 2;
-					if (intersections[k].dir.y > 0)
-						vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					if (intersections[k].dir.y < 0)
-						vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					vertex[index++] = 0;
+							break;
 
-					index += 3;
-					vertex[index++] = intersections[k + 1].x + intersections[k + 1].size / 2;
-					if (intersections[k].dir.y > 0)
-						vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					if (intersections[k].dir.y < 0)
-						vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					vertex[index++] = 0;
-				}
-				if (intersections[k + 1].dir.x < 0)
-				{
-					index -= 6;
-					vertex[index++] = intersections[k + 1].x + intersections[k + 1].size / 2;
-					if (intersections[k].dir.y > 0)
-						vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					if (intersections[k].dir.y < 0)
-						vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					vertex[index++] = 0;
+						case 1:
+							vertex[index++] = intersections[k].x + intersections[k].size / 2;
+							vertex[index++] = intersections[k].y + intersections[k].size / 2;
+							vertex[index++] = 0.0;
 
-					index += 3;
-					vertex[index++] = intersections[k + 1].x - intersections[k + 1].size / 2;
-					if (intersections[k].dir.y > 0)
-						vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					if (intersections[k].dir.y < 0)
-						vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					vertex[index++] = 0;
-				}
+							vertex[index++] = intersections[k].x + intersections[k].size / 2;
+							vertex[index++] = intersections[k].y - intersections[k].size / 2;
+							vertex[index++] = 0.0;
 
-				if (intersections[k + 1].dir.y > 0)
-				{
-					index -= 6;
-					if (intersections[k].dir.x > 0)
-						vertex[index++] = intersections[k + 1].x + intersections[k + 1].size / 2;
-					if (intersections[k].dir.x < 0)
-						vertex[index++] = intersections[k + 1].x - intersections[k + 1].size / 2;
-					vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;			
-					vertex[index++] = 0;
+							break;
 
-					index += 3;
-					if (intersections[k].dir.x > 0)
-						vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					if (intersections[k].dir.x < 0)
-						vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					vertex[index++] = 0;
-				}
-				if (intersections[k + 1].dir.y < 0)
-				{
-					index -= 6;
-					if (intersections[k].dir.x > 0)
-						vertex[index++] = intersections[k + 1].x + intersections[k + 1].size / 2;
-					if (intersections[k].dir.x < 0)
-						vertex[index++] = intersections[k + 1].x - intersections[k + 1].size / 2;
-					vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					vertex[index++] = 0;
+						case 2:
+							vertex[index++] = intersections[k].x - intersections[k].size / 2;
+							vertex[index++] = intersections[k].y - intersections[k].size / 2;
+							vertex[index++] = 0.0;
 
-					index += 3;
-					if (intersections[k].dir.x > 0)
-						vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					if (intersections[k].dir.x < 0)
-						vertex[index++] = intersections[k + 1].y + intersections[k + 1].size / 2;
-					vertex[index++] = intersections[k + 1].y - intersections[k + 1].size / 2;
-					vertex[index++] = 0;
+							vertex[index++] = intersections[k].x + intersections[k].size / 2;
+							vertex[index++] = intersections[k].y - intersections[k].size / 2;
+							vertex[index++] = 0.0;
+
+							break;
+
+						case 3:
+							vertex[index++] = intersections[k].x - intersections[k].size / 2;
+							vertex[index++] = intersections[k].y + intersections[k].size / 2;
+							vertex[index++] = 0.0;
+
+							vertex[index++] = intersections[k].x - intersections[k].size / 2;
+							vertex[index++] = intersections[k].y - intersections[k].size / 2;
+							vertex[index++] = 0.0;
+
+							break;
+						}
+					}
+					else
+					{
+						switch (n)
+						{
+						case 0:
+							if (intersections[k].connections[n] != -1)
+							{
+								vertex[index++] = intersections[k].x - intersections[k].size / 2;
+								vertex[index++] = intersections[k].y + intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[k].x + intersections[k].size / 2;
+								vertex[index++] = intersections[k].y + intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+
+							}
+
+							break;
+
+
+						case 1:
+							if (intersections[k].connections[n] != -1)
+							{
+								vertex[index++] = intersections[k].x + intersections[k].size / 2;
+								vertex[index++] = intersections[k].y + intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[k].x + intersections[k].size / 2;
+								vertex[index++] = intersections[k].y - intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+							}
+							break;
+
+						case 2:
+							if (intersections[k].connections[n] != -1)
+							{
+								vertex[index++] = intersections[k].x - intersections[k].size / 2;
+								vertex[index++] = intersections[k].y - intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[k].x + intersections[k].size / 2;
+								vertex[index++] = intersections[k].y - intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+							}
+
+							break;
+
+						case 3:
+							if (intersections[k].connections[n] != -1)
+							{
+								vertex[index++] = intersections[k].x - intersections[k].size / 2;
+								vertex[index++] = intersections[k].y + intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[k].x - intersections[k].size / 2;
+								vertex[index++] = intersections[k].y - intersections[k].size / 2;
+								vertex[index++] = 0.0;
+
+								vertex[index++] = intersections[intersections[k].connections[n]].x + intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = intersections[intersections[k].connections[n]].y - intersections[intersections[k].connections[n]].size / 2;
+								vertex[index++] = 0.0;
+							}
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -330,10 +370,21 @@ void timer(int = 0)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_DYNAMIC_DRAW);
 
 	//fpscalculate();
+}
 
+
+void timer(int = 0)
+{
+	updategame();
+
+	glutTimerFunc(30, timer, 0);
+}
+
+
+void timer2(int = 0)
+{
 	display();
-
-	glutTimerFunc(5, timer, 0);
+	glutTimerFunc(0, timer2, 0);
 }
 
 void MouseFunc(int button, int state, int x, int y)
@@ -411,6 +462,7 @@ int main(int argc, char** argv) {
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 	glutDisplayFunc(display);
 	glutMouseFunc(MouseFunc);
-	timer();
+	glutTimerFunc(0, timer, 0);	
+	glutTimerFunc(0, timer2, 0);
 	glutMainLoop();
 }
