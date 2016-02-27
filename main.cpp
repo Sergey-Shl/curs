@@ -138,14 +138,40 @@ void fpscalculate()
 	cout << "FPS: " << fps << endl;
 }
 
+int vehicle_in_inters(vehicle &car)
+{
+	for (int i = 0; i < num_intersetions; i++)
+	{
+		int size = intersections[i].size / 2;
+		if ((car.x > intersections[i].x - size) && (car.x < intersections[i].x + size) && (car.y > intersections[i].y - size) && (car.y < intersections[i].y + size))
+		{
+			car.old_dir = car.direction;
+			for (int j = 0; j < 4; j++)
+			{
+				if (float a = intersections[i].directions[j].main)
+				{
+					float f = glm::orientedAngle(normolize(glm::vec2(car.direction.x, car.direction.y)), normolize(intersections[i].directions[j].dir));
+					car.angle_of_rotate = f;
+				}
+			}
+			car.rotated = false;
+			return i;
+		}
+	}
+	return -1;
+}
 
 void move()
 {
 	for (int i = 0; i < c.getTop(); i++)
 	{
+		vehicle_in_inters(c.Peek(i));
+		//if (vehicle_in_inters(c.Peek(i)) != -1)
 
-		c.Peek(i).direction = normolize({ c.Peek(i).direction.x, c.Peek(i).direction.y, 0.0 });
-
+		if (c.Peek(i).rotated == false)
+			c.Peek(i).rotate_the_car();
+		//c.Peek(i).direction = normolize({ c.Peek(i).direction.x, c.Peek(i).direction.y, 0.0 });
+		
 		c.Peek(i).x += c.Peek(i).direction.x * c.Peek(i).speed;
 		c.Peek(i).y += c.Peek(i).direction.y * c.Peek(i).speed;
 
@@ -154,8 +180,8 @@ void move()
 			c.Peek(i).xCoord[j] += c.Peek(i).direction.x * c.Peek(i).speed;
 			c.Peek(i).yCoord[j] += c.Peek(i).direction.y * c.Peek(i).speed;
 		}
-		float angle = c.Peek(i).getAngle();
-		c.Peek(i).rotate(angle);
+		//float angle = c.Peek(i).getAngle();
+		//c.Peek(i).rotate(angle);
 
 	}
 }
@@ -216,7 +242,7 @@ void updategame()
 				{
 					if (intersections[k].directions[n].dir.x == 0 && intersections[k].directions[n].dir.y == 0)
 					{
-						cout << "k = " << k << " n = " << n << endl;
+						//cout << "k = " << k << " n = " << n << endl;
 						switch (n)
 						{
 						case 0:
@@ -377,7 +403,7 @@ void timer(int = 0)
 {
 	updategame();
 
-	glutTimerFunc(30, timer, 0);
+	glutTimerFunc(22, timer, 0);
 }
 
 
@@ -398,7 +424,7 @@ int main(int argc, char** argv) {
 	vehicle car;
 	for (int i = 0; i < max_veh; i++)
 	{
-		car.x = (i - max_veh / 2) * 0;
+		car.x = (i - max_veh / 2) * 0 + 5;
 		car.y = -100 - (i - max_veh / 2) * 15;
 		car.speed = +0.20;
 
@@ -409,6 +435,12 @@ int main(int argc, char** argv) {
 		car.height = 6;
 		car.idVehicle = i;
 		car.position = i;
+
+		car.rotated = true;
+		car.angle_of_wheel =  0.01;
+		car.angle_of_rotate = 3.14 / 2;
+		car.old_dir = car.direction;
+
 		float w2 = car.width / 2;
 		float h2 = car.height / 2;
 
