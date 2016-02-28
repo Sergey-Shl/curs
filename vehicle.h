@@ -39,6 +39,7 @@ public:
 	float angle_of_rotate;
 	glm::vec3 old_dir;
 	bool rotated;
+	bool busy;
 	void rotate_the_car();
 };
 
